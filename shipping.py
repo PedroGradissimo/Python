@@ -5,6 +5,8 @@ class ShippingContainer:
 
     # Class Attribute
     next_serial = 1337
+    HEIGHT_FT = 8.5
+    WIDTH_FT = 8.0
 
     """@staticmethod
     # Static methods allow us to bound functions with the class
@@ -31,23 +33,29 @@ class ShippingContainer:
     # Function creates an empty container
     # Argument **kwargs is used allows for the base class functions accept
     # arguments destined to the derived class functions
-    def create_empty(cls, owner_code, **kwargs):
-        return cls(owner_code, contents=[], **kwargs)
+    def create_empty(cls, owner_code, length_ft, **kwargs):
+        return cls(owner_code, length_ft, contents=[], **kwargs)
 
     @classmethod
     # This function creates a container with a list of items passed as argument
-    def create_with_items(cls, owner_code, items, **kwargs):
-        return cls(owner_code, contents=list(items), **kwargs)
+    def create_with_items(cls, owner_code, length_ft, items, **kwargs):
+        return cls(owner_code, length_ft, contents=list(items), **kwargs)
 
     # The instance attribute can be accessed via the instance object reference self.
     # The class attribute can be accessed via the class object reference ShippingContainer.
-    def __init__(self, owner_code, contents, **kwargs):
+    def __init__(self, owner_code, length_ft, contents, **kwargs):
         self.owner_code = owner_code
+        self.length_ft = length_ft
         self.content = contents
         self.bic = self._make_bic_code(
             owner_code=owner_code,
             serial=ShippingContainer._generate_serial()
         )
+
+    @property
+    # Retrieves the volume of the container
+    def volume_ft3(self):
+        return ShippingContainer.HEIGHT_FT * ShippingContainer.WIDTH_FT * self.length_ft
 
 
 # This is how we override a class, passing it as an argument of the subclass
@@ -56,10 +64,11 @@ class RefrigeratorShippingContainer(ShippingContainer):
 
     # Constant
     MAX_CELSIUS = 4.0
+    FRIDGE_VOLUME_FT3 = 100
 
-    def __init__(self, owner_code, contents, *, celsius, **kwargs):
+    def __init__(self, owner_code, length_ft, contents, *, celsius, **kwargs):
         # To override the base init class in the derived class we use the built-in function "super"
-        super().__init__(owner_code, contents, **kwargs)
+        super().__init__(owner_code, length_ft, contents, **kwargs)
         self.celsius = celsius
 
     @staticmethod
@@ -92,10 +101,14 @@ class RefrigeratorShippingContainer(ShippingContainer):
         return RefrigeratorShippingContainer._c_to_f(self._celsius)
 
     @fahrenheit.setter
-    # Setter method that writes the celsius tempersture given the fahrenheit temperature
+    # Setter method that writes the celsius temperature given the fahrenheit temperature
     def fahrenheit(self, value):
         self._celsius = RefrigeratorShippingContainer._f_to_c(value)
 
+    @property
+    # Override the volume_ft3 method from base class
+    def volume_ft3(self):
+        return super().volume_ft3 - RefrigeratorShippingContainer.FRIDGE_VOLUME_FT3
 
     @staticmethod
     def _make_bic_code(owner_code, serial):
@@ -104,3 +117,14 @@ class RefrigeratorShippingContainer(ShippingContainer):
             serial=str(serial).zfill(6),
             category="R"
         )
+
+
+class HeatedRefrigeratedShippingContainer(RefrigeratorShippingContainer):
+
+    MIN_CELSIUS = -20
+
+    @RefrigeratorShippingContainer.celsius.setter
+    def celsius(self, value):
+        if value < HeatedRefrigeratedShippingContainer.MIN_CELSIUS:
+            raise ValueError("Temperature to cold!")
+        RefrigeratorShippingContainer.celsius.fset(self, value)
