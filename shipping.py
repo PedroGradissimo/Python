@@ -54,7 +54,12 @@ class ShippingContainer:
 
     @property
     # Retrieves the volume of the container
+    # Template method, doesnt do anything, except delegate to a regular method
+    # With this method there is no need to override @property, override the regular method
     def volume_ft3(self):
+        return self._calc_volume()
+
+    def _calc_volume(self):
         return ShippingContainer.HEIGHT_FT * ShippingContainer.WIDTH_FT * self.length_ft
 
 
@@ -91,6 +96,9 @@ class RefrigeratorShippingContainer(ShippingContainer):
     # Setter method used as a write only method
     # to change the celsius attribute value
     def celsius(self, value):
+        self._set_celsius(value)
+
+    def _set_celsius(self, value):
         if value > RefrigeratorShippingContainer.MAX_CELSIUS:
             raise ValueError("Temperature to hot!")
         self._celsius = value
@@ -98,17 +106,15 @@ class RefrigeratorShippingContainer(ShippingContainer):
     @property
     # Getter method that retrieves the fahrenheit temperature given the celsius temperature
     def fahrenheit(self):
-        return RefrigeratorShippingContainer._c_to_f(self._celsius)
+        return RefrigeratorShippingContainer._c_to_f(self.celsius)
 
     @fahrenheit.setter
     # Setter method that writes the celsius temperature given the fahrenheit temperature
     def fahrenheit(self, value):
-        self._celsius = RefrigeratorShippingContainer._f_to_c(value)
+        self.celsius = RefrigeratorShippingContainer._f_to_c(value)
 
-    @property
-    # Override the volume_ft3 method from base class
-    def volume_ft3(self):
-        return super().volume_ft3 - RefrigeratorShippingContainer.FRIDGE_VOLUME_FT3
+    def _calc_volume(self):
+        return super()._calc_volume() - RefrigeratorShippingContainer.FRIDGE_VOLUME_FT3
 
     @staticmethod
     def _make_bic_code(owner_code, serial):
@@ -123,8 +129,8 @@ class HeatedRefrigeratedShippingContainer(RefrigeratorShippingContainer):
 
     MIN_CELSIUS = -20
 
-    @RefrigeratorShippingContainer.celsius.setter
-    def celsius(self, value):
+    #@RefrigeratorShippingContainer.celsius.setter
+    def _set_celsius(self, value):
         if value < HeatedRefrigeratedShippingContainer.MIN_CELSIUS:
             raise ValueError("Temperature to cold!")
-        RefrigeratorShippingContainer.celsius.fset(self, value)
+        super()._set_celsius(value)
